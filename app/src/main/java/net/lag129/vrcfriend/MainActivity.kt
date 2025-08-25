@@ -4,13 +4,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 import io.github.vrchatapi.ApiClient
 import io.github.vrchatapi.Configuration
 import io.github.vrchatapi.api.AuthenticationApi
@@ -41,12 +47,37 @@ class MainActivity : ComponentActivity() {
         setContent {
             VRCFriendTheme {
                 val coroutineScope = rememberCoroutineScope()
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Button(
-                        modifier = Modifier.padding(innerPadding),
-                        onClick = { coroutineScope.launch { getCurrentUser(authApi) } }
+                val username = remember { mutableStateOf("") }
+                val password = remember { mutableStateOf("") }
+
+                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .padding(32.dp)
+                            .fillMaxSize()
                     ) {
-                        Text("Get Current User")
+                        OutlinedTextField(
+                            value = username.value,
+                            onValueChange = { username.value = it },
+                            label = { Text("Username") }
+                        )
+                        OutlinedTextField(
+                            value = password.value,
+                            onValueChange = { password.value = it },
+                            label = { Text("Password") },
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+                        Button(
+                            onClick = {
+                                authHeader.username = username.value
+                                authHeader.password = password.value
+                                coroutineScope.launch {
+                                    getCurrentUser(authApi)
+                                }
+                            }
+                        ) {
+                            Text("Get Current User")
+                        }
                     }
                 }
             }
@@ -63,6 +94,7 @@ suspend fun getCurrentUser(authApi: AuthenticationApi) {
     } catch (e: Exception) {
         when {
             e.toString().contains("emailOtp") -> {
+                println("emailOtp")
                 // val code = TwoFactorEmailCode().code("認証コード")
                 // withContext(Dispatchers.IO) {
                 //     authApi.verify2FAEmailCode(code)
@@ -70,6 +102,7 @@ suspend fun getCurrentUser(authApi: AuthenticationApi) {
             }
 
             e.toString().contains("requiresTwoFactorAuth") -> {
+                println("requiresTwoFactorAuth")
                 // val code = TwoFactorAuthCode().code("認証コード")
                 // withContext(Dispatchers.IO) {
                 //     authApi.verify2FA(code)
