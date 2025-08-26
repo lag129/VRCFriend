@@ -11,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,41 +47,46 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VRCFriendTheme {
-                val coroutineScope = rememberCoroutineScope()
-                val username = remember { mutableStateOf("") }
-                val password = remember { mutableStateOf("") }
-
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    Column(
-                        modifier = Modifier
-                            .padding(32.dp)
-                            .fillMaxSize()
-                    ) {
-                        OutlinedTextField(
-                            value = username.value,
-                            onValueChange = { username.value = it },
-                            label = { Text("Username") }
-                        )
-                        OutlinedTextField(
-                            value = password.value,
-                            onValueChange = { password.value = it },
-                            label = { Text("Password") },
-                            visualTransformation = PasswordVisualTransformation()
-                        )
-                        Button(
-                            onClick = {
-                                authHeader.username = username.value
-                                authHeader.password = password.value
-                                coroutineScope.launch {
-                                    getCurrentUser(authApi)
-                                }
-                            }
-                        ) {
-                            Text("Get Current User")
-                        }
-                    }
+                    LoginScreen(authHeader, authApi)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun LoginScreen(authHeader: HttpBasicAuth, authApi: AuthenticationApi) {
+    val coroutineScope = rememberCoroutineScope()
+    val username = remember { mutableStateOf("") }
+    val password = remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .padding(32.dp)
+            .fillMaxSize()
+    ) {
+        OutlinedTextField(
+            value = username.value,
+            onValueChange = { username.value = it },
+            label = { Text("Username") }
+        )
+        OutlinedTextField(
+            value = password.value,
+            onValueChange = { password.value = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation()
+        )
+        Button(
+            onClick = {
+                authHeader.username = username.value
+                authHeader.password = password.value
+                coroutineScope.launch {
+                    getCurrentUser(authApi)
+                }
+            }
+        ) {
+            Text("Get Current User")
         }
     }
 }
