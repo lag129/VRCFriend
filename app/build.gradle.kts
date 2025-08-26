@@ -60,6 +60,17 @@ dependencies {
     implementation(libs.vrchatapi.java) {
         exclude(group = "javax.ws.rs", module = "jsr311-api")
     }
-    
+
     implementation(libs.kotlinx.coroutines.android)
+
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.9.3")
+
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
+
+    // Gson
+    implementation("com.google.code.gson:gson:2.13.1")
+
+    implementation("com.squareup.okhttp3:okhttp:5.1.0")
 }

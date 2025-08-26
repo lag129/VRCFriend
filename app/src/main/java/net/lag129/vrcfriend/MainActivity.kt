@@ -4,122 +4,109 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import io.github.vrchatapi.ApiClient
-import io.github.vrchatapi.Configuration
-import io.github.vrchatapi.api.AuthenticationApi
-import io.github.vrchatapi.auth.HttpBasicAuth
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import net.lag129.vrcfriend.ui.screens.AuthSuccessScreen
+import net.lag129.vrcfriend.ui.screens.EmailOtpScreen
+import net.lag129.vrcfriend.ui.screens.LoginScreen
+import net.lag129.vrcfriend.ui.screens.TwoFactorAuthScreen
 import net.lag129.vrcfriend.ui.theme.VRCFriendTheme
+import net.lag129.vrcfriend.viewmodel.AuthViewModel
 
 
 class MainActivity : ComponentActivity() {
-    lateinit var authHeader: HttpBasicAuth
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val defaultClient: ApiClient? = Configuration.getDefaultApiClient()
-        val authApi = AuthenticationApi(defaultClient)
-
-        if (defaultClient != null) {
-            authHeader = defaultClient.getAuthentication("authHeader") as HttpBasicAuth
-            authHeader.username = ""
-            authHeader.password = ""
-            defaultClient.setUserAgent("VRCFriend/0.0.1 ${authHeader.username}")
-        }
 
         enableEdgeToEdge()
         setContent {
             VRCFriendTheme {
+                val navController = rememberNavController()
+                val authViewModel: AuthViewModel = viewModel()
+                val authState by authViewModel.authState.collectAsState()
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    LoginScreen(authHeader, authApi)
+                    NavHost(
+                        navController = navController,
+                        startDestination = "login"
+                    ) {
+                        composable("login") {
+                            LoginScreen(
+                                authViewModel = authViewModel,
+                                onNavigateToEmailOtp = {
+                                    navController.navigate("emailOtp")
+                                },
+                                onNavigateToTwoFactorAuth = {
+                                    navController.navigate("twoFactorAuth")
+                                },
+                                onNavigateToSuccess = {
+                                    navController.navigate("success") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable("emailOtp") {
+                            EmailOtpScreen(
+                                authViewModel = authViewModel,
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                },
+                                onNavigateToSuccess = {
+                                    navController.navigate("success") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable("twoFactorAuth") {
+                            TwoFactorAuthScreen(
+                                authViewModel = authViewModel,
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                },
+                                onNavigateToSuccess = {
+                                    navController.navigate("success") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable("success") {
+                            when (val state = authState) {
+                                is AuthState.Success -> {
+                                    AuthSuccessScreen(
+                                        user = state.user,
+                                        onLogout = {
+                                            authViewModel.resetToIdle()
+                                            navController.navigate("login") {
+                                                popUpTo("success") { inclusive = true }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                else -> {
+                                    navController.navigate("login") {
+                                        popUpTo("success") { inclusive = true }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun LoginScreen(authHeader: HttpBasicAuth, authApi: AuthenticationApi) {
-    val coroutineScope = rememberCoroutineScope()
-    val username = remember { mutableStateOf("") }
-    val password = remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier
-            .padding(32.dp)
-            .fillMaxSize()
-    ) {
-        OutlinedTextField(
-            value = username.value,
-            onValueChange = { username.value = it },
-            label = { Text("Username") }
-        )
-        OutlinedTextField(
-            value = password.value,
-            onValueChange = { password.value = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation()
-        )
-        Button(
-            onClick = {
-                authHeader.username = username.value
-                authHeader.password = password.value
-                coroutineScope.launch {
-                    getCurrentUser(authApi)
-                }
-            }
-        ) {
-            Text("Get Current User")
-        }
-    }
-}
-
-suspend fun getCurrentUser(authApi: AuthenticationApi) {
-    try {
-        val user = withContext(Dispatchers.IO) {
-            authApi.currentUser
-        }
-        println("ログインしました: " + user.displayName)
-    } catch (e: Exception) {
-        when {
-            e.toString().contains("emailOtp") -> {
-                println("emailOtp")
-                // val code = TwoFactorEmailCode().code("認証コード")
-                // withContext(Dispatchers.IO) {
-                //     authApi.verify2FAEmailCode(code)
-                // }
-            }
-
-            e.toString().contains("requiresTwoFactorAuth") -> {
-                println("requiresTwoFactorAuth")
-                // val code = TwoFactorAuthCode().code("認証コード")
-                // withContext(Dispatchers.IO) {
-                //     authApi.verify2FA(code)
-                // }
-            }
-
-            else -> {
-                println(e.message)
-                println(e.javaClass.simpleName)
-                e.printStackTrace()
-            }
-        }
-    }
-}
