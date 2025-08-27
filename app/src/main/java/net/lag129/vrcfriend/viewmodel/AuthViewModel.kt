@@ -129,7 +129,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val friends = withContext(Dispatchers.IO) {
-                    friendsApi.getFriends(0, 100, true) // オフラインフレンドも含む
+                    friendsApi.getFriends(0, 100, null)
                 }
                 _friendsList.value = friends
                 println("VRCFriend: Loaded ${friends.size} friends")
