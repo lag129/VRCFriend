@@ -66,6 +66,7 @@ class AuthViewModel : ViewModel() {
                     authApi.currentUser
                 }
                 _authState.value = AuthState.Success(user)
+                loadFriends()
             } catch (e: Exception) {
                 when {
                     e.toString().contains("emailOtp") -> {
@@ -96,6 +97,7 @@ class AuthViewModel : ViewModel() {
                     authApi.currentUser
                 }
                 _authState.value = AuthState.Success(user)
+                loadFriends()
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Email OTP verification failed")
             }
@@ -114,6 +116,7 @@ class AuthViewModel : ViewModel() {
                     authApi.currentUser
                 }
                 _authState.value = AuthState.Success(user)
+                loadFriends()
             } catch (e: Exception) {
                 _authState.value =
                     AuthState.Error(e.message ?: "Two factor auth verification failed")
@@ -130,6 +133,7 @@ class AuthViewModel : ViewModel() {
                 }
                 _friendsList.value = friends
                 println("VRCFriend: Loaded ${friends.size} friends")
+                println("VRCFriend: Friends: $friends")
             } catch (e: Exception) {
                 println("VRCFriend: Failed to load friends: ${e.message}")
                 _friendsList.value = emptyList()

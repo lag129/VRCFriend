@@ -83,16 +83,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("success") {
-                            when (val state = authState) {
+                            when (authState) {
                                 is AuthState.Success -> {
                                     AuthSuccessScreen(
-                                        user = state.user,
-                                        onLogout = {
-                                            authViewModel.resetToIdle()
-                                            navController.navigate("login") {
-                                                popUpTo("success") { inclusive = true }
-                                            }
-                                        }
+                                        authViewModel = authViewModel
                                     )
                                 }
 
