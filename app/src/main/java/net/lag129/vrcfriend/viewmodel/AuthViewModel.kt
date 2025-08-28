@@ -2,6 +2,10 @@ package net.lag129.vrcfriend.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import io.github.vrchatapi.ApiClient
 import io.github.vrchatapi.Configuration
 import io.github.vrchatapi.JSON
@@ -19,6 +23,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.lag129.vrcfriend.AuthState
 import net.lag129.vrcfriend.CustomTypeAdapterFactory
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 
 class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -53,6 +59,49 @@ class AuthViewModel : ViewModel() {
                 .create()
             JSON.setGson(customGson)
         }
+    }
+
+    fun setupImageLoaderWithAuth(context: PlatformContext) {
+        val defaultClient: ApiClient? = Configuration.getDefaultApiClient()
+
+        if (defaultClient == null) {
+            return
+        }
+
+        // VRChat APIクライアントのCookieJarを取得
+        val vrchatCookieJar = defaultClient.httpClient.cookieJar
+
+        // VRChat APIドメイン用のUser-Agent追加インターセプター  
+        val userAgentInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+
+            val newRequest = if (originalRequest.url.host.contains("vrchat.cloud")) {
+                originalRequest.newBuilder()
+                    .addHeader("User-Agent", "VRCFriend/0.0.1 ${authHeader.username}")
+                    .build()
+            } else {
+                originalRequest
+            }
+
+            chain.proceed(newRequest)
+        }
+
+        // VRChat APIクライアントと同じCookieJarを使用したOkHttpクライアント
+        val okHttpClient = OkHttpClient.Builder()
+            .cookieJar(vrchatCookieJar)
+            .addInterceptor(userAgentInterceptor)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
+
+        // カスタムImageLoaderを設定
+        val imageLoader = ImageLoader.Builder(context)
+            .components {
+                add(OkHttpNetworkFetcherFactory({ okHttpClient }))
+            }
+            .build()
+
+        SingletonImageLoader.setSafe { imageLoader }
     }
 
     fun login(username: String, password: String) {
@@ -132,10 +181,7 @@ class AuthViewModel : ViewModel() {
                     friendsApi.getFriends(0, 100, null)
                 }
                 _friendsList.value = friends
-                println("VRCFriend: Loaded ${friends.size} friends")
-                println("VRCFriend: Friends: $friends")
             } catch (e: Exception) {
-                println("VRCFriend: Failed to load friends: ${e.message}")
                 _friendsList.value = emptyList()
             } finally {
                 _friendsLoading.value = false
