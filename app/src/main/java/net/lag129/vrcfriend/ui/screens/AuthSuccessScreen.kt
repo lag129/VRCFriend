@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import io.github.vrchatapi.model.LimitedUserFriend
 import net.lag129.vrcfriend.ui.theme.VRCFriendTheme
@@ -44,7 +44,8 @@ fun AuthSuccessScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val friendsList by authViewModel.friendsList.collectAsState()
+    val onlineFriendsList by authViewModel.onlineFriendsList.collectAsState()
+    val offlineFriendsList by authViewModel.offlineFriendsList.collectAsState()
     val friendsLoading by authViewModel.friendsLoading.collectAsState()
 
     // 認証付きImageLoaderを初期化
@@ -55,7 +56,17 @@ fun AuthSuccessScreen(
     if (friendsLoading) {
         CircularProgressIndicator()
     } else {
-        FriendsList(friendsList, modifier)
+        Column(
+            modifier = modifier
+                .padding(16.dp)
+                .padding(top = 32.dp)
+        ) {
+            Text("オンライン", fontSize = 24.sp)
+            FriendsList(onlineFriendsList)
+            Spacer(modifier = Modifier.height(32.dp))
+            Text("オフライン", fontSize = 24.sp)
+            FriendsList(offlineFriendsList)
+        }
     }
 }
 
@@ -65,9 +76,6 @@ fun FriendsList(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
         verticalArrangement = Arrangement.Center
     ) {
         LazyColumn {

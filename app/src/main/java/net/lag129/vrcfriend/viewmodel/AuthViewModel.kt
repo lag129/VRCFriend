@@ -30,8 +30,11 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    private val _friendsList = MutableStateFlow<List<LimitedUserFriend>>(emptyList())
-    val friendsList: StateFlow<List<LimitedUserFriend>> = _friendsList.asStateFlow()
+    private val _onlineFriendsList = MutableStateFlow<List<LimitedUserFriend>>(emptyList())
+    val onlineFriendsList: StateFlow<List<LimitedUserFriend>> = _onlineFriendsList.asStateFlow()
+
+    private val _offlineFriendsList = MutableStateFlow<List<LimitedUserFriend>>(emptyList())
+    val offlineFriendsList: StateFlow<List<LimitedUserFriend>> = _offlineFriendsList.asStateFlow()
 
     private val _friendsLoading = MutableStateFlow(false)
     val friendsLoading: StateFlow<Boolean> = _friendsLoading.asStateFlow()
@@ -68,10 +71,8 @@ class AuthViewModel : ViewModel() {
             return
         }
 
-        // VRChat APIクライアントのCookieJarを取得
         val vrchatCookieJar = defaultClient.httpClient.cookieJar
 
-        // VRChat APIドメイン用のUser-Agent追加インターセプター  
         val userAgentInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
 
@@ -85,8 +86,7 @@ class AuthViewModel : ViewModel() {
 
             chain.proceed(newRequest)
         }
-
-        // VRChat APIクライアントと同じCookieJarを使用したOkHttpクライアント
+        
         val okHttpClient = OkHttpClient.Builder()
             .cookieJar(vrchatCookieJar)
             .addInterceptor(userAgentInterceptor)
@@ -94,7 +94,6 @@ class AuthViewModel : ViewModel() {
             .followSslRedirects(true)
             .build()
 
-        // カスタムImageLoaderを設定
         val imageLoader = ImageLoader.Builder(context)
             .components {
                 add(OkHttpNetworkFetcherFactory({ okHttpClient }))
@@ -177,12 +176,17 @@ class AuthViewModel : ViewModel() {
         _friendsLoading.value = true
         viewModelScope.launch {
             try {
-                val friends = withContext(Dispatchers.IO) {
-                    friendsApi.getFriends(0, 100, null)
+                val onlineFriends = withContext(Dispatchers.IO) {
+                    friendsApi.getFriends(0, 100, false)
                 }
-                _friendsList.value = friends
+                _onlineFriendsList.value = onlineFriends
+
+                val offlineFriends = withContext(Dispatchers.IO) {
+                    friendsApi.getFriends(0, 100, true)
+                }
+                _offlineFriendsList.value = offlineFriends
             } catch (e: Exception) {
-                _friendsList.value = emptyList()
+                _onlineFriendsList.value = emptyList()
             } finally {
                 _friendsLoading.value = false
             }
@@ -191,6 +195,6 @@ class AuthViewModel : ViewModel() {
 
     fun resetToIdle() {
         _authState.value = AuthState.Idle
-        _friendsList.value = emptyList()
+        _onlineFriendsList.value = emptyList()
     }
 }
