@@ -1,5 +1,6 @@
 package net.lag129.vrcfriend.ui.screens
 
+import android.annotation.SuppressLint
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,18 +10,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -35,6 +41,7 @@ import kotlin.time.Instant
 @Composable
 fun AuthSuccessScreen(
     authViewModel: AuthViewModel,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val friendsList by authViewModel.friendsList.collectAsState()
@@ -48,43 +55,73 @@ fun AuthSuccessScreen(
     if (friendsLoading) {
         CircularProgressIndicator()
     } else {
-        FriendsList(friendsList)
+        FriendsList(friendsList, modifier)
     }
 }
 
 @Composable
-fun FriendsList(friendsList: List<LimitedUserFriend>) {
-    LazyColumn(
+fun FriendsList(
+    @SuppressLint("ComposeUnstableCollections") friendsList: List<LimitedUserFriend>,
+    modifier: Modifier = Modifier
+) {
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(32.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        items(friendsList) { friend ->
-            FriendCard(friend)
+        LazyColumn {
+            items(friendsList) { friend ->
+                HorizontalDivider(
+                    thickness = DividerDefaults.Thickness,
+                    color = DividerDefaults.color,
+                    modifier = Modifier.height(1.dp)
+                )
+                FriendCard(friend)
+            }
         }
+
+        HorizontalDivider(
+            thickness = DividerDefaults.Thickness,
+            color = DividerDefaults.color,
+            modifier = Modifier.height(1.dp)
+        )
     }
 }
 
 @Composable
-fun FriendCard(friend: LimitedUserFriend) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        AsyncImage(
-            model = friend.imageUrl,
-            contentDescription = friend.displayName,
-            modifier = Modifier.size(72.dp)
-        )
+fun FriendCard(
+    friend: LimitedUserFriend,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Spacer(modifier = Modifier.height(4.dp))
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            AsyncImage(
+                model = friend.imageUrl,
+                contentDescription = friend.displayName,
+                modifier = Modifier.clip(CircleShape)
+            )
 
-        Column() {
-            Text(friend.displayName)
-            Text(setStatus(friend.status.value))
-            Text(setStatusDescription(friend))
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(friend.displayName, fontWeight = FontWeight.SemiBold)
+                Text(setStatus(friend.status.value), fontWeight = FontWeight.Thin)
+                Text(setStatusDescription(friend), fontWeight = FontWeight.Thin)
+            }
         }
-    }
 
-    Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 }
 
 private fun setStatus(status: String): String {
@@ -132,7 +169,7 @@ private fun calculateTimeAgo(createdTimeString: String): String {
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewFriendCard() {
+private fun PreviewFriendCard() {
     VRCFriendTheme {
         FriendCard(
             friend = LimitedUserFriend().apply {

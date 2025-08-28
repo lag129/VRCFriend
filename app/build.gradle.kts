@@ -68,4 +68,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
+
+    lintChecks(libs.compose.lint.checks)
 }
