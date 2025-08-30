@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -114,7 +115,10 @@ fun FriendCard(
             AsyncImage(
                 model = friend.imageUrl,
                 contentDescription = friend.displayName,
-                modifier = Modifier.clip(CircleShape)
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .height(64.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
