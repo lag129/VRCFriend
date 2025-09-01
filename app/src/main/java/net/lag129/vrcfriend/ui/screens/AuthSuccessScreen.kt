@@ -115,10 +115,11 @@ fun FriendCard(
             AsyncImage(
                 model = friend.imageUrl,
                 contentDescription = friend.displayName,
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.FillHeight,
                 modifier = Modifier
                     .clip(CircleShape)
                     .height(64.dp)
+                    .width(64.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
